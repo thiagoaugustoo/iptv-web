@@ -83,6 +83,9 @@ const Player = (() => {
 
   // ---- Open / Load ----
   function open(item) {
+    console.log('ITEM:', item);
+    console.log('STREAM URL:', item.streamUrl);
+    console.log('URL:', item.url);
     async function loadChannel(item, startTime = 0) {
 
   try {
