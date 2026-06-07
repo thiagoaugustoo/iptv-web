@@ -2,8 +2,16 @@
  * app.js — Main entry point, router, event bus, initialization
  */
 
+
 const App = (() => {
   'use strict';
+
+  if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then(() => {
+    console.log("SW ativo");
+  });
+}
+
 
   // ---- Event Bus ----
   const _listeners = {};
