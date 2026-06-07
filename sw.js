@@ -1,4 +1,4 @@
-const CACHE_NAME = "iptv-cache-v1";
+const CACHE_NAME = "iptv-cache-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
