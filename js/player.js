@@ -99,7 +99,21 @@ const Player = (() => {
     // Restore progress
     const startTime = item.startTime || 0;
 
-    loadStream(item.streamUrl, startTime);
+    if (channel.url.toLowerCase().endsWith('.ts')) {
+
+  const response = await fetch(
+    `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(channel.url)}`
+  );
+
+  const data = await response.json();
+
+  loadStream(data.hls);
+
+} else {
+
+  loadStream(channel.url);
+
+}
     showControls();
 
     // Add to history
