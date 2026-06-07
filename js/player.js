@@ -87,9 +87,7 @@ const Player = (() => {
     console.log('STREAM URL:', item.streamUrl);
     console.log('URL:', item.url);
     async function loadChannel(item, startTime = 0) {
-
   try {
-
     const streamUrl = item.streamUrl || item.url;
 
     if (!streamUrl) {
@@ -97,8 +95,10 @@ const Player = (() => {
       return;
     }
 
-    if (streamUrl.toLowerCase().includes('.ts')) {
+    let finalUrl = streamUrl;
 
+    // 🚀 tudo que NÃO for m3u8 passa no proxy
+    if (!isHls(streamUrl)) {
       const response = await fetch(
         `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
       );
@@ -110,22 +110,15 @@ const Player = (() => {
         return;
       }
 
-      loadStream(data.hls, startTime);
-
-    } else {
-
-      loadStream(streamUrl, startTime);
-
+      finalUrl = data.hls;
     }
 
+    loadStream(finalUrl, startTime);
+
   } catch (err) {
-
     console.error(err);
-
     showError('Erro ao carregar stream');
-
   }
-
 }
 
 // Restore progress
