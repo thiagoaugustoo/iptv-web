@@ -5,14 +5,6 @@
 
 const Player = (() => {
 
-  function isHls(url) {
-    if (!url) return false;
-    return (
-      url.includes('.m3u8') ||
-      url.includes('application/vnd.apple.mpegurl')
-    );
-  }
-
   'use strict';
 
   let _hls = null;
@@ -91,13 +83,14 @@ const Player = (() => {
   }
 
   // ---- Open / Load ----
+  // ---- Open / Load ----
   function open(item) {
     _currentItem = item;
     console.log('ITEM:', item);
     console.log('STREAM URL:', item.streamUrl);
     console.log('URL:', item.url);
 
-    // 👇 Exibe o player na tela
+    // Exibe o player na tela
     dom('playerOverlay').classList.remove('hidden');
 
     async function loadChannel(item, startTime = 0) {
@@ -111,8 +104,8 @@ const Player = (() => {
 
         let finalUrl = streamUrl;
 
-        // 🚀 tudo que NÃO for m3u8 passa no proxy
-        if (!isHls(streamUrl)) {
+        // 🚀 Trocamos o isHls() por detectStreamType() que já existe e é mais seguro
+        if (detectStreamType(streamUrl) !== 'hls') {
           const response = await fetch(
             `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
           );
@@ -157,6 +150,29 @@ const Player = (() => {
       });
     }
   }
+
+    // Restore progress
+    const startTime = item.startTime || 0;
+
+    loadChannel(item, startTime);
+    showControls();
+
+    // Habilita navegação do player
+    if (typeof Navigation !== 'undefined' && Navigation.setPlayerMode) {
+        Navigation.setPlayerMode(true);
+    }
+
+    // Add to history
+    if (typeof Storage !== 'undefined') {
+      Storage.addHistory({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        poster: item.poster || '',
+        progress: 0
+      });
+    }
+  });
 
   function detectStreamType(url) {
     if (!url) return 'unknown';
