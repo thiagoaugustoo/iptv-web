@@ -4,6 +4,15 @@
  */
 
 const Player = (() => {
+
+  function isHls(url) {
+  if (!url) return false;
+
+  return (
+    url.includes('.m3u8') ||
+    url.includes('application/vnd.apple.mpegurl')
+  );
+}
   'use strict';
 
   let _hls = null;
@@ -81,14 +90,6 @@ const Player = (() => {
     setVolume(settings.playerVolume || 100);
   }
 
-  function isHls(url) {
-  if (!url) return false;
-
-  return (
-    url.includes('.m3u8') ||
-    url.includes('application/vnd.apple.mpegurl')
-  );
-}
 
   // ---- Open / Load ----
   function open(item) {
