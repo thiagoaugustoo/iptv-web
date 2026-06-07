@@ -596,6 +596,16 @@ loadChannel(item, startTime);
   }
 
   // ---- Menu helpers ----
+
+  function isHls(url) {
+  if (!url) return false;
+
+  return (
+    url.includes('.m3u8') ||
+    url.includes('application/vnd.apple.mpegurl')
+  );
+}
+
   function createMenu(id) {
     const menu = document.createElement('div');
     menu.className = 'player-menu';
