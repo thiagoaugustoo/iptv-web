@@ -147,6 +147,18 @@ loadChannel(item, startTime);
     });
   }
 
+  function detectStreamType(url) {
+  if (!url) return 'unknown';
+
+  const clean = url.split('?')[0].toLowerCase();
+
+  if (clean.includes('.m3u8')) return 'hls';
+  if (clean.includes('.ts')) return 'ts';
+  if (clean.includes('.mp4')) return 'mp4';
+
+  return 'mp4';
+}
+
   function loadStream(url, startTime = 0) {
     destroyHls();
     _video.src = '';
@@ -157,9 +169,9 @@ loadChannel(item, startTime);
       _hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
-        backBufferLength: 90,
-        maxBufferLength: 30,
-        maxMaxBufferLength: 600,
+        backBufferLength: 60,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
       });
       _hls.loadSource(url);
       _hls.attachMedia(_video);
