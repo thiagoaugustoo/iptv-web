@@ -92,44 +92,70 @@ const Player = (() => {
 
 
   // ---- Open / Load ----
+  // ---- Open / Load ----
   function open(item) {
     console.log('ITEM:', item);
     console.log('STREAM URL:', item.streamUrl);
     console.log('URL:', item.url);
+
+    // 👇 ADICIONE ESTA LINHA: Ela garante que a tela do player fique visível
+    dom('playerOverlay').classList.remove('hidden');
+
     async function loadChannel(item, startTime = 0) {
-  try {
-    const streamUrl = item.streamUrl || item.url;
+      try {
+        const streamUrl = item.streamUrl || item.url;
 
-    if (!streamUrl) {
-      showError('URL do canal não encontrada');
-      return;
-    }
+        if (!streamUrl) {
+          showError('URL do canal não encontrada');
+          return;
+        }
 
-    let finalUrl = streamUrl;
+        let finalUrl = streamUrl;
 
-    // 🚀 tudo que NÃO for m3u8 passa no proxy
-    if (!isHls(streamUrl)) {
-      const response = await fetch(
-        `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
-      );
+        // 🚀 tudo que NÃO for m3u8 passa no proxy
+        if (!isHls(streamUrl)) {
+          const response = await fetch(
+            `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
+          );
 
-      const data = await response.json();
+          const data = await response.json();
 
-      if (!data.hls) {
-        showError('Proxy não retornou playlist HLS');
-        return;
+          if (!data.hls) {
+            showError('Proxy não retornou playlist HLS');
+            return;
+          }
+
+          finalUrl = data.hls;
+        }
+
+        loadStream(finalUrl, startTime);
+
+      } catch (err) {
+        console.error(err);
+        showError('Erro ao carregar stream');
       }
-
-      finalUrl = data.hls;
     }
 
-    loadStream(finalUrl, startTime);
+    // Restore progress
+    const startTime = item.startTime || 0;
 
-  } catch (err) {
-    console.error(err);
-    showError('Erro ao carregar stream');
+    loadChannel(item, startTime);
+    showControls();
+
+    // Adiciona o player mode para navegação (já que no close() você desativa)
+    if (typeof Navigation !== 'undefined' && Navigation.setPlayerMode) {
+        Navigation.setPlayerMode(true);
+    }
+
+    // Add to history
+    Storage.addHistory({
+      id: item.id,
+      type: item.type,
+      title: item.title,
+      poster: item.poster || '',
+      progress: 0
+    });
   }
-}
 
 // Restore progress
 const startTime = item.startTime || 0;
