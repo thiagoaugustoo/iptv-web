@@ -247,3 +247,17 @@ const App = (() => {
     init
   };
 })();
+
+// ---- Bootstrap Seguro ----
+function startApp() {
+  if (typeof App !== 'undefined') {
+    App.init().catch(e => console.error('Erro na inicialização do App:', e));
+  }
+}
+
+// Verifica se a página já carregou antes de tentar iniciar
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
