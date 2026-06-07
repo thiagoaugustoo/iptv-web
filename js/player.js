@@ -6,13 +6,13 @@
 const Player = (() => {
 
   function isHls(url) {
-  if (!url) return false;
+    if (!url) return false;
+    return (
+      url.includes('.m3u8') ||
+      url.includes('application/vnd.apple.mpegurl')
+    );
+  }
 
-  return (
-    url.includes('.m3u8') ||
-    url.includes('application/vnd.apple.mpegurl')
-  );
-}
   'use strict';
 
   let _hls = null;
@@ -86,19 +86,18 @@ const Player = (() => {
     document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
     // Load saved volume
-    const settings = Storage.getSettings();
+    const settings = typeof Storage !== 'undefined' ? Storage.getSettings() : {};
     setVolume(settings.playerVolume || 100);
   }
 
-
-  // ---- Open / Load ----
   // ---- Open / Load ----
   function open(item) {
+    _currentItem = item;
     console.log('ITEM:', item);
     console.log('STREAM URL:', item.streamUrl);
     console.log('URL:', item.url);
 
-    // 👇 ADICIONE ESTA LINHA: Ela garante que a tela do player fique visível
+    // 👇 Exibe o player na tela
     dom('playerOverlay').classList.remove('hidden');
 
     async function loadChannel(item, startTime = 0) {
@@ -142,54 +141,37 @@ const Player = (() => {
     loadChannel(item, startTime);
     showControls();
 
-    // Adiciona o player mode para navegação (já que no close() você desativa)
+    // Habilita navegação do player
     if (typeof Navigation !== 'undefined' && Navigation.setPlayerMode) {
         Navigation.setPlayerMode(true);
     }
 
     // Add to history
-    Storage.addHistory({
-      id: item.id,
-      type: item.type,
-      title: item.title,
-      poster: item.poster || '',
-      progress: 0
-    });
+    if (typeof Storage !== 'undefined') {
+      Storage.addHistory({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        poster: item.poster || '',
+        progress: 0
+      });
+    }
   }
 
-// Restore progress
-const startTime = item.startTime || 0;
-
-loadChannel(item, startTime);
-    showControls();
-
-    // Add to history
-    Storage.addHistory({
-      id: item.id,
-      type: item.type,
-      title: item.title,
-      poster: item.poster || '',
-      progress: 0
-    });
-  });
-
   function detectStreamType(url) {
-  if (!url) return 'unknown';
-
-  const clean = url.split('?')[0].toLowerCase();
-
-  if (clean.includes('.m3u8')) return 'hls';
-  if (clean.includes('.ts')) return 'ts';
-  if (clean.includes('.mp4')) return 'mp4';
-
-  return 'mp4';
-}
+    if (!url) return 'unknown';
+    const clean = url.split('?')[0].toLowerCase();
+    if (clean.includes('.m3u8')) return 'hls';
+    if (clean.includes('.ts')) return 'ts';
+    if (clean.includes('.mp4')) return 'mp4';
+    return 'mp4';
+  }
 
   function loadStream(url, startTime = 0) {
     destroyHls();
     _video.src = '';
 
-    const streamType = Utils.detectStreamType(url);
+    const streamType = detectStreamType(url);
 
     if (streamType === 'hls' && typeof Hls !== 'undefined' && Hls.isSupported()) {
       _hls = new Hls({
@@ -262,24 +244,26 @@ loadChannel(item, startTime);
 
   function seek(seconds) {
     if (!_video || _isLive) return;
-    _video.currentTime = Utils.clamp(_video.currentTime + seconds, 0, _video.duration || 0);
+    _video.currentTime = clamp(_video.currentTime + seconds, 0, _video.duration || 0);
     showControls();
   }
 
   function seekTo(time) {
     if (!_video) return;
-    _video.currentTime = Utils.clamp(time, 0, _video.duration || 0);
+    _video.currentTime = clamp(time, 0, _video.duration || 0);
   }
 
   function setVolume(val) {
     if (!_video) return;
-    const v = Utils.clamp(val, 0, 100) / 100;
+    const v = clamp(val, 0, 100) / 100;
     _video.volume = v;
     _video.muted = v === 0;
     const slider = dom('volumeSlider');
     if (slider) slider.value = val;
     updateMuteBtn();
-    Storage.saveSettings({ playerVolume: val });
+    if (typeof Storage !== 'undefined') {
+      Storage.saveSettings({ playerVolume: val });
+    }
   }
 
   function toggleMute() {
@@ -321,18 +305,20 @@ loadChannel(item, startTime);
     }
     clearSubtitles();
     dom('playerOverlay').classList.add('hidden');
-    Navigation.setPlayerMode(false);
-    Navigation.enable();
+    if (typeof Navigation !== 'undefined' && Navigation.setPlayerMode) {
+      Navigation.setPlayerMode(false);
+      Navigation.enable();
+    }
     clearTimeout(_controlsTimer);
     clearInterval(_progressSaveTimer);
     _currentItem = null;
-    App.emit('player:closed');
+    if (typeof App !== 'undefined') App.emit('player:closed');
   }
 
   function retry() {
     if (_currentItem) {
       dom('playerError').classList.add('hidden');
-      loadStream(_currentItem.streamUrl, _video ? _video.currentTime : 0);
+      loadStream(_currentItem.streamUrl || _currentItem.url, _video ? _video.currentTime : 0);
     }
   }
 
@@ -352,7 +338,7 @@ loadChannel(item, startTime);
 
   function onEnded() {
     saveProgress();
-    App.emit('player:ended', _currentItem);
+    if (typeof App !== 'undefined') App.emit('player:ended', _currentItem);
   }
 
   function onTimeUpdate() {
@@ -360,9 +346,11 @@ loadChannel(item, startTime);
     const cur = _video.currentTime;
     const dur = _video.duration;
 
-    dom('playerCurrentTime').textContent = Utils.formatDuration(cur);
+    const formatDur = (typeof Utils !== 'undefined' && Utils.formatDuration) ? Utils.formatDuration : (s) => Math.floor(s) + 's';
+
+    dom('playerCurrentTime').textContent = formatDur(cur);
     if (!isNaN(dur) && dur > 0) {
-      dom('playerDuration').textContent = Utils.formatDuration(dur);
+      dom('playerDuration').textContent = formatDur(dur);
       const pct = (cur / dur) * 100;
       dom('playerProgressFill').style.width = pct + '%';
       dom('playerProgressThumb').style.left = pct + '%';
@@ -374,8 +362,10 @@ loadChannel(item, startTime);
   function onDurationChange() {
     if (!_video) return;
     const dur = _video.duration;
+    const formatDur = (typeof Utils !== 'undefined' && Utils.formatDuration) ? Utils.formatDuration : (s) => Math.floor(s) + 's';
+
     if (!isNaN(dur) && dur > 0) {
-      dom('playerDuration').textContent = Utils.formatDuration(dur);
+      dom('playerDuration').textContent = formatDur(dur);
       _isLive = false;
     } else {
       dom('playerDuration').textContent = 'LIVE';
@@ -383,17 +373,16 @@ loadChannel(item, startTime);
     }
   }
 
-  function onError() {
-    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-  _hls.startLoad();
-} else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-  _hls.recoverMediaError();
-} else {
-  console.warn('HLS error ignorado:', data);
-}
+  function onError(e) {
+    console.error('Video error:', e);
+    showError('Erro de reprodução nativa. Tente novamente.');
   }
 
   // ---- Progress bar ----
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
   function onProgressClick(e) {
     if (!_video || _isLive) return;
     const bar = dom('playerProgressBar');
@@ -407,7 +396,7 @@ loadChannel(item, startTime);
     const bar = dom('playerProgressBar');
     const move = (ev) => {
       const rect = bar.getBoundingClientRect();
-      const pct = Utils.clamp((ev.clientX - rect.left) / rect.width, 0, 1);
+      const pct = clamp((ev.clientX - rect.left) / rect.width, 0, 1);
       seekTo(pct * (_video.duration || 0));
     };
     const up = () => {
@@ -423,7 +412,7 @@ loadChannel(item, startTime);
     const bar = dom('playerProgressBar');
     const touch = e.touches[0];
     const rect = bar.getBoundingClientRect();
-    const pct = Utils.clamp((touch.clientX - rect.left) / rect.width, 0, 1);
+    const pct = clamp((touch.clientX - rect.left) / rect.width, 0, 1);
     seekTo(pct * (_video.duration || 0));
   }
 
@@ -454,7 +443,7 @@ loadChannel(item, startTime);
 
   // ---- Progress save ----
   function saveProgress() {
-    if (!_video || !_currentItem) return;
+    if (!_video || !_currentItem || typeof Storage === 'undefined') return;
     const cur = _video.currentTime;
     const dur = _video.duration;
     if (cur < 5) return;
@@ -709,11 +698,11 @@ loadChannel(item, startTime);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setVolume(Utils.clamp((_video ? _video.volume * 100 : 100) + 10, 0, 100));
+        setVolume(clamp((_video ? _video.volume * 100 : 100) + 10, 0, 100));
         break;
       case 'ArrowDown':
         e.preventDefault();
-        setVolume(Utils.clamp((_video ? _video.volume * 100 : 100) - 10, 0, 100));
+        setVolume(clamp((_video ? _video.volume * 100 : 100) - 10, 0, 100));
         break;
       case 'Escape':
       case 'Backspace':

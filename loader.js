@@ -1,6 +1,6 @@
 // loader.js
 const BASE = "/js/";
-const APP_VERSION = "1.0.29"; // Mude isso apenas quando fizer alterações reais no código
+const APP_VERSION = "1.0.31"; // Mude isso apenas quando fizer alterações reais no código
 
 const scripts = [
   "utils.js", "storage.js", "parser.js", "search.js",
