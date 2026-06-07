@@ -184,8 +184,7 @@ const Parser = (() => {
 
   // ---- CORS proxy helpers ----
   const CORS_PROXIES = [
-    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://proxy.silvatech.dev.br/proxy?url=${encodeURIComponent(url)}`
   ];
 
   async function fetchText(fetchUrl) {
