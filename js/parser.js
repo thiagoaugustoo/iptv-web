@@ -201,6 +201,9 @@ const Parser = (() => {
   // ---- Fetch and parse ----
   async function fetchAndParse(url) {
     const safeUrl = Utils.sanitizeUrl(url);
+    const isHttpUrl =
+    safeUrl.startsWith('http://') &&
+    window.location.protocol === 'https:';
     if (!safeUrl) throw new Error('Invalid URL');
 
     const settings = Storage.getSettings();
@@ -210,7 +213,7 @@ const Parser = (() => {
     let text = null;
     let usedProxy = false;
 
-    if (proxyMode === 'never') {
+    if (proxyMode === 'never' && !isHttpUrl) {
       // Direct only
       text = await fetchText(safeUrl);
     } else if (proxyMode === 'always') {
@@ -218,23 +221,40 @@ const Parser = (() => {
       text = await fetchText(CORS_PROXIES[0](safeUrl));
       usedProxy = true;
     } else {
-      // auto: try direct first, fall back to proxies
-      try {
-        text = await fetchText(safeUrl);
-      } catch (directErr) {
-        let lastErr = directErr;
+    if (isHttpUrl) {
         for (const proxyFn of CORS_PROXIES) {
-          try {
-            text = await fetchText(proxyFn(safeUrl));
-            usedProxy = true;
-            break;
-          } catch (proxyErr) {
-            lastErr = proxyErr;
-          }
+            try {
+                text = await fetchText(proxyFn(safeUrl));
+                usedProxy = true;
+                break;
+            } catch (err) {}
         }
-        if (!usedProxy) throw lastErr;
-      }
+
+        if (!text) {
+            throw new Error(
+                'HTTP playlists are blocked by the browser. No CORS proxy succeeded.'
+            );
+        }
+    } else {
+        try {
+            text = await fetchText(safeUrl);
+        } catch (directErr) {
+            let lastErr = directErr;
+
+            for (const proxyFn of CORS_PROXIES) {
+                try {
+                    text = await fetchText(proxyFn(safeUrl));
+                    usedProxy = true;
+                    break;
+                } catch (proxyErr) {
+                    lastErr = proxyErr;
+                }
+            }
+
+            if (!usedProxy) throw lastErr;
+        }
     }
+}
 
     if (!text || !text.trim().startsWith('#EXTM3U')) {
       throw new Error('Not a valid M3U file');
