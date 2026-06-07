@@ -4,7 +4,6 @@
  */
 
 const Player = (() => {
-
   'use strict';
 
   let _hls = null;
@@ -82,7 +81,15 @@ const Player = (() => {
     setVolume(settings.playerVolume || 100);
   }
 
-  // ---- Open / Load ----
+  function detectStreamType(url) {
+    if (!url) return 'unknown';
+    const clean = url.split('?')[0].toLowerCase();
+    if (clean.includes('.m3u8')) return 'hls';
+    if (clean.includes('.ts')) return 'ts';
+    if (clean.includes('.mp4')) return 'mp4';
+    return 'mp4';
+  }
+
   // ---- Open / Load ----
   function open(item) {
     _currentItem = item;
@@ -90,7 +97,7 @@ const Player = (() => {
     console.log('STREAM URL:', item.streamUrl);
     console.log('URL:', item.url);
 
-    // Exibe o player na tela
+    // 👇 Exibe o player na tela
     dom('playerOverlay').classList.remove('hidden');
 
     async function loadChannel(item, startTime = 0) {
@@ -104,7 +111,7 @@ const Player = (() => {
 
         let finalUrl = streamUrl;
 
-        // 🚀 Trocamos o isHls() por detectStreamType() que já existe e é mais seguro
+        // 🚀 Usa o detectStreamType ao invés do antigo isHls
         if (detectStreamType(streamUrl) !== 'hls') {
           const response = await fetch(
             `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
@@ -149,38 +156,6 @@ const Player = (() => {
         progress: 0
       });
     }
-  }
-
-    // Restore progress
-    const startTime = item.startTime || 0;
-
-    loadChannel(item, startTime);
-    showControls();
-
-    // Habilita navegação do player
-    if (typeof Navigation !== 'undefined' && Navigation.setPlayerMode) {
-        Navigation.setPlayerMode(true);
-    }
-
-    // Add to history
-    if (typeof Storage !== 'undefined') {
-      Storage.addHistory({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        poster: item.poster || '',
-        progress: 0
-      });
-    }
-  });
-
-  function detectStreamType(url) {
-    if (!url) return 'unknown';
-    const clean = url.split('?')[0].toLowerCase();
-    if (clean.includes('.m3u8')) return 'hls';
-    if (clean.includes('.ts')) return 'ts';
-    if (clean.includes('.mp4')) return 'mp4';
-    return 'mp4';
   }
 
   function loadStream(url, startTime = 0) {
