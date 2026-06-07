@@ -40,6 +40,19 @@ const UISettings = (() => {
         </div>
         <button class="btn-secondary" id="refreshPlaylistBtn" tabindex="0">↻ Refresh</button>
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">CORS Proxy</div>
+          <div class="settings-desc">If your M3U URL uses HTTP, a proxy will be used automatically to bypass browser security restrictions.</div>
+        </div>
+        <div class="settings-control">
+          <select id="corsProxySelect" class="settings-select" tabindex="0">
+            <option value="auto" ${(settings.corsProxy || 'auto') === 'auto' ? 'selected' : ''}>Auto (try direct, fallback to proxy)</option>
+            <option value="always" ${settings.corsProxy === 'always' ? 'selected' : ''}>Always use proxy</option>
+            <option value="never" ${settings.corsProxy === 'never' ? 'selected' : ''}>Never use proxy</option>
+          </select>
+        </div>
+      </div>
     `);
     container.appendChild(playlistSection);
 
@@ -189,6 +202,15 @@ const UISettings = (() => {
       refreshBtn.addEventListener('click', () => {
         const url = Storage.getLastPlaylistUrl();
         if (url) App.loadPlaylist(url);
+      });
+    }
+
+    // CORS Proxy preference
+    const corsProxySelect = container.querySelector('#corsProxySelect');
+    if (corsProxySelect) {
+      corsProxySelect.addEventListener('change', () => {
+        Storage.saveSettings({ corsProxy: corsProxySelect.value });
+        Utils.showToast('CORS proxy preference saved');
       });
     }
 

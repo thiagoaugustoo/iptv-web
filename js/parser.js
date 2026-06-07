@@ -182,24 +182,66 @@ const Parser = (() => {
     return { channels, movies, series };
   }
 
+  // ---- CORS proxy helpers ----
+  const CORS_PROXIES = [
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  ];
+
+  async function fetchText(fetchUrl) {
+    const response = await fetch(fetchUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/x-mpegurl, text/plain, */*' },
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return response.text();
+  }
+
   // ---- Fetch and parse ----
   async function fetchAndParse(url) {
     const safeUrl = Utils.sanitizeUrl(url);
     if (!safeUrl) throw new Error('Invalid URL');
 
-    const response = await fetch(safeUrl, {
-      method: 'GET',
-      headers: { 'Accept': 'application/x-mpegurl, text/plain, */*' },
-      cache: 'no-store'
-    });
+    const settings = Storage.getSettings();
+    // proxyMode: 'auto' (default) | 'always' | 'never'
+    const proxyMode = settings.corsProxy || 'auto';
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    let text = null;
+    let usedProxy = false;
+
+    if (proxyMode === 'never') {
+      // Direct only
+      text = await fetchText(safeUrl);
+    } else if (proxyMode === 'always') {
+      // Skip direct, go straight to first proxy
+      text = await fetchText(CORS_PROXIES[0](safeUrl));
+      usedProxy = true;
+    } else {
+      // auto: try direct first, fall back to proxies
+      try {
+        text = await fetchText(safeUrl);
+      } catch (directErr) {
+        let lastErr = directErr;
+        for (const proxyFn of CORS_PROXIES) {
+          try {
+            text = await fetchText(proxyFn(safeUrl));
+            usedProxy = true;
+            break;
+          } catch (proxyErr) {
+            lastErr = proxyErr;
+          }
+        }
+        if (!usedProxy) throw lastErr;
+      }
     }
 
-    const text = await response.text();
-    if (!text.trim().startsWith('#EXTM3U')) {
+    if (!text || !text.trim().startsWith('#EXTM3U')) {
       throw new Error('Not a valid M3U file');
+    }
+
+    if (usedProxy) {
+      Utils.showToast('Loaded via CORS proxy (HTTP URL detected)', 'info');
     }
 
     const result = parseM3U(text);
