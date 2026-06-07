@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0B0B0B" />
+  <title>IPTV Web</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/player.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar-logo">
+        <span class="logo-icon">&#9654;</span>
+        <span class="logo-text">IPTV Web</span>
+      </div>
+      <ul class="sidebar-nav" id="sidebarNav">
+        <li><a href="#home" class="nav-item" data-route="home" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#8962;</span>
+          <span class="nav-label">Home</span>
+        </a></li>
+        <li><a href="#livetv" class="nav-item" data-route="livetv" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#128250;</span>
+          <span class="nav-label">Live TV</span>
+        </a></li>
+        <li><a href="#movies" class="nav-item" data-route="movies" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#127916;</span>
+          <span class="nav-label">Movies</span>
+        </a></li>
+        <li><a href="#series" class="nav-item" data-route="series" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#127902;</span>
+          <span class="nav-label">Series</span>
+        </a></li>
+        <li><a href="#search" class="nav-item" data-route="search" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#128269;</span>
+          <span class="nav-label">Search</span>
+        </a></li>
+        <li><a href="#favorites" class="nav-item" data-route="favorites" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#10084;</span>
+          <span class="nav-label">Favorites</span>
+        </a></li>
+        <li><a href="#history" class="nav-item" data-route="history" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#128336;</span>
+          <span class="nav-label">History</span>
+        </a></li>
+        <li><a href="#settings" class="nav-item" data-route="settings" tabindex="0">
+          <span class="nav-icon" aria-hidden="true">&#9881;</span>
+          <span class="nav-label">Settings</span>
+        </a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content" role="main">
+      <div id="pageContainer" class="page-container"></div>
+    </main>
+
+    <!-- Player Overlay -->
+    <div id="playerOverlay" class="player-overlay hidden" role="dialog" aria-label="Video Player" aria-modal="true">
+      <video id="videoElement" class="video-element" playsinline></video>
+      <div id="playerControls" class="player-controls">
+        <div class="player-top-bar">
+          <button id="playerClose" class="player-btn player-close" aria-label="Close player" tabindex="0">&#10005;</button>
+          <div class="player-title-area">
+            <span id="playerTitle" class="player-title"></span>
+            <span id="playerSubtitle" class="player-subtitle"></span>
+          </div>
+        </div>
+        <div id="subtitleDisplay" class="subtitle-display" aria-live="polite"></div>
+        <div class="player-bottom-bar">
+          <div class="player-progress-area">
+            <span id="playerCurrentTime" class="player-time">0:00</span>
+            <div class="player-progress-bar" id="playerProgressBar" role="slider" aria-label="Seek" tabindex="0">
+              <div class="player-progress-fill" id="playerProgressFill"></div>
+              <div class="player-progress-thumb" id="playerProgressThumb"></div>
+            </div>
+            <span id="playerDuration" class="player-time">0:00</span>
+          </div>
+          <div class="player-buttons-row">
+            <button id="btnRewind" class="player-btn" aria-label="Rewind 10 seconds" tabindex="0">&#9194;</button>
+            <button id="btnPlayPause" class="player-btn player-btn-main" aria-label="Play/Pause" tabindex="0">&#9654;</button>
+            <button id="btnForward" class="player-btn" aria-label="Forward 10 seconds" tabindex="0">&#9193;</button>
+            <button id="btnStop" class="player-btn" aria-label="Stop" tabindex="0">&#9632;</button>
+            <div class="player-volume-area">
+              <button id="btnMute" class="player-btn" aria-label="Mute/Unmute" tabindex="0">&#128266;</button>
+              <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="100" aria-label="Volume" tabindex="0" />
+            </div>
+            <button id="btnSubtitles" class="player-btn" aria-label="Subtitles" tabindex="0">CC</button>
+            <button id="btnAudioTrack" class="player-btn" aria-label="Audio track" tabindex="0">&#127925;</button>
+            <button id="btnQuality" class="player-btn" aria-label="Quality" tabindex="0">HD</button>
+            <button id="btnFullscreen" class="player-btn" aria-label="Fullscreen" tabindex="0">&#9974;</button>
+          </div>
+        </div>
+      </div>
+      <div id="playerSpinner" class="player-spinner hidden" aria-label="Loading">
+        <div class="spinner-ring"></div>
+      </div>
+      <div id="playerError" class="player-error hidden">
+        <span id="playerErrorMsg"></span>
+        <button id="playerRetry" class="btn-accent" tabindex="0">Retry</button>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Modal -->
+    <div id="modalOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+      <div id="modalContent" class="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui/home.js"></script>
+  <script src="js/ui/livetv.js"></script>
+  <script src="js/ui/movies.js"></script>
+  <script src="js/ui/series.js"></script>
+  <script src="js/ui/searchpage.js"></script>
+  <script src="js/ui/favorites.js"></script>
+  <script src="js/ui/history.js"></script>
+  <script src="js/ui/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
