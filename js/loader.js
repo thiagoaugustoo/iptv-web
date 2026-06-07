@@ -15,7 +15,8 @@ const scripts = [
   "ui/favorites.js",
   "ui/history.js",
   "ui/settings.js",
-  "app.js"
+  "app.js",
+  "https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"
 ];
 
 scripts.forEach(src => {
