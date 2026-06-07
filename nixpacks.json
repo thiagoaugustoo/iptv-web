@@ -1,0 +1,14 @@
+{
+  "providers": ["node"],
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs_18"]
+    },
+    "install": {
+      "cmds": ["npm i"]
+    }
+  },
+  "start": {
+    "cmd": "node server.js"
+  }
+}
