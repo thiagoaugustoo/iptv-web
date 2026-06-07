@@ -247,8 +247,3 @@ const App = (() => {
     init
   };
 })();
-
-// ---- Bootstrap ----
-document.addEventListener('DOMContentLoaded', () => {
-  App.init().catch(e => console.error('App init error:', e));
-});
