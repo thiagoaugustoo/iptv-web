@@ -300,6 +300,7 @@ loadChannel(item, startTime);
 
   // ---- Events ----
   function onPlay() {
+    dom('playerError').classList.add('hidden');
     const btn = dom('btnPlayPause');
     if (btn) btn.textContent = '⏸';
     startProgressSave();
@@ -345,7 +346,13 @@ loadChannel(item, startTime);
   }
 
   function onError() {
-    showError('Failed to load stream.');
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+  _hls.startLoad();
+} else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+  _hls.recoverMediaError();
+} else {
+  console.warn('HLS error ignorado:', data);
+}
   }
 
   // ---- Progress bar ----
