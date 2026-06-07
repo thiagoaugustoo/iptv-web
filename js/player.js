@@ -171,7 +171,7 @@ loadChannel(item, startTime);
       poster: item.poster || '',
       progress: 0
     });
-  }
+  });
 
   function detectStreamType(url) {
   if (!url) return 'unknown';
