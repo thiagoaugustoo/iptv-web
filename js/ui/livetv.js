@@ -175,16 +175,38 @@ const UILiveTV = (() => {
       </button>
     `;
 
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.card-fav-btn')) return;
-      App.playItem({
-        id: ch.id,
-        type: 'channel',
-        title: ch.title,
-        poster: ch.logo,
-        streamUrl: ch.streamUrl
-      });
-    });
+    card.addEventListener('click', async (e) => {
+  if (e.target.closest('.card-fav-btn')) return;
+
+  let finalUrl = ch.streamUrl;
+
+  // 🔥 INTERCEPTA TS E CONVERTE VIA PROXY
+  if (finalUrl && finalUrl.toLowerCase().includes('.ts')) {
+    try {
+      const response = await fetch(
+        `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(finalUrl)}`
+      );
+
+      const data = await response.json();
+
+      if (data.hls) {
+        finalUrl = data.hls;
+      }
+    } catch (err) {
+      console.error('Erro proxy TS:', err);
+      Utils.showToast('Erro ao converter stream', 'error');
+      return;
+    }
+  }
+
+  App.playItem({
+    id: ch.id,
+    type: 'channel',
+    title: ch.title,
+    poster: ch.logo,
+    streamUrl: finalUrl
+  });
+});
 
     const favBtn = card.querySelector('.card-fav-btn');
     favBtn.addEventListener('click', async (e) => {
