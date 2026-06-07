@@ -18,6 +18,7 @@ const scripts = [
   "ui/settings.js"
 ];
 
+
 scripts.forEach(file => {
   const s = document.createElement("script");
   s.src = BASE + file + "?v=" + Date.now();
