@@ -83,37 +83,52 @@ const Player = (() => {
 
   // ---- Open / Load ----
   function open(item) {
-    _currentItem = item;
-    _isLive = !item.duration && item.type === 'channel';
+    async function loadChannel(item, startTime = 0) {
 
-    const overlay = dom('playerOverlay');
-    overlay.classList.remove('hidden');
-    Navigation.setPlayerMode(true);
-    Navigation.disable();
+  try {
 
-    dom('playerTitle').textContent = item.title || '';
-    dom('playerSubtitle').textContent = item.subtitle || '';
-    dom('playerError').classList.add('hidden');
-    showSpinner(true);
+    const streamUrl = item.streamUrl || item.url;
 
-    // Restore progress
-    const startTime = item.startTime || 0;
+    if (!streamUrl) {
+      showError('URL do canal não encontrada');
+      return;
+    }
 
-    if (channel.url.toLowerCase().endsWith('.ts')) {
+    if (streamUrl.toLowerCase().includes('.ts')) {
 
-  const response = await fetch(
-    `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(channel.url)}`
-  );
+      const response = await fetch(
+        `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
+      );
 
-  const data = await response.json();
+      const data = await response.json();
 
-  loadStream(data.hls);
+      if (!data.hls) {
+        showError('Proxy não retornou playlist HLS');
+        return;
+      }
 
-} else {
+      loadStream(data.hls, startTime);
 
-  loadStream(channel.url);
+    } else {
+
+      loadStream(streamUrl, startTime);
+
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+    showError('Erro ao carregar stream');
+
+  }
 
 }
+
+// Restore progress
+const startTime = item.startTime || 0;
+
+loadChannel(item, startTime);
     showControls();
 
     // Add to history
