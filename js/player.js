@@ -178,15 +178,20 @@ const Player = (() => {
       // Configuração base do HLS
       const hlsConfig = {
         enableWorker: true,
-        backBufferLength: 90, // Mantém 1 minuto e meio para trás caso o usuário volte um pouco
+        backBufferLength: 30, // Mantém 30 segundos para trás caso o usuário volte um pouco
       };
 
       if (isLiveStream) {
-        // MODO TV AO VIVO: Buffer curto
-        // Carrega apenas blocos suficientes para manter a estabilidade sem atrasar a live
-        hlsConfig.lowLatencyMode = true;
-        hlsConfig.maxBufferLength = 30;     
-        hlsConfig.maxMaxBufferLength = 60;  
+        // MODO TV AO VIVO: Foco na estabilidade para não travar (desliga latência extrema)
+        hlsConfig.lowLatencyMode = false;
+        
+        // Define uma margem de segurança respirável para transmissões via proxy
+        hlsConfig.maxBufferLength = 20;     // 20 segundos de buffer é o ideal para lives
+        hlsConfig.maxMaxBufferLength = 40;  // Limite máximo de 40 segundos
+        
+        // CRÍTICO: Aumenta a memória também na Live para caber blocos em alta resolução
+        // 90 * 1024 * 1024 = 90 Megabytes (Garante que o buffer não pare de baixar prematuramente)
+        hlsConfig.maxBufferSize = 90 * 1024 * 1024;
       } else {
         // MODO FILMES E SÉRIES (VOD): Buffer otimizado
         hlsConfig.lowLatencyMode = false;
