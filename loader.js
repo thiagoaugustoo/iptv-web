@@ -1,5 +1,5 @@
 const BASE = "/js/";
-const APP_VERSION = "1.0.2"; // Atualizado para limpar o cache
+const APP_VERSION = "1.0.39"; // Atualizado para limpar o cache
 
 const scripts = [
   "utils.js",

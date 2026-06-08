@@ -185,14 +185,19 @@ const Player = (() => {
         // MODO TV AO VIVO: Buffer curto
         // Carrega apenas blocos suficientes para manter a estabilidade sem atrasar a live
         hlsConfig.lowLatencyMode = true;
-        hlsConfig.maxBufferLength = 30;     // 30 segundos de buffer ideal
-        hlsConfig.maxMaxBufferLength = 60;  // Limite máximo de 1 minuto
+        hlsConfig.maxBufferLength = 30;     
+        hlsConfig.maxMaxBufferLength = 60;  
       } else {
-        // MODO FILMES E SÉRIES (VOD): Buffer gigante
-        // Permite que o navegador baixe enormes pedaços do filme de uma vez
+        // MODO FILMES E SÉRIES (VOD): Buffer otimizado
         hlsConfig.lowLatencyMode = false;
-        hlsConfig.maxBufferLength = 1800;    // Tenta carregar 30 minutos pra frente
-        hlsConfig.maxMaxBufferLength = 3600; // Limite máximo de 1 hora de buffer
+        
+        // Reduzimos o tempo alvo para não estrangular a rede nem o Proxy
+        hlsConfig.maxBufferLength = 90;      // Mantém 1.5 minutos de buffer contínuo (ideal)
+        hlsConfig.maxMaxBufferLength = 180;  // Teto máximo de 3 minutos
+        
+        // CRÍTICO: Aumentamos o limite de memória do buffer do HLS.js
+        // 120 * 1024 * 1024 = 120 Megabytes (Garante que blocos pesados de vídeo HD/4K caibam no navegador)
+        hlsConfig.maxBufferSize = 120 * 1024 * 1024;
       }
 
       _hls = new Hls(hlsConfig);
