@@ -101,7 +101,7 @@ const Player = (() => {
     dom('playerOverlay').classList.remove('hidden');
 
     async function loadChannel(item, startTime = 0) {
-      try {
+      try { // <-- Este é o seu TRY externo (original)
         const streamUrl = item.streamUrl || item.url;
 
         if (!streamUrl) {
@@ -111,25 +111,31 @@ const Player = (() => {
 
         let finalUrl = streamUrl;
 
-        // 🚀 Usa o detectStreamType ao invés do antigo isHls
+        // 🚀 Tenta passar no proxy
         if (detectStreamType(streamUrl) !== 'hls') {
-          const response = await fetch(
-            `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
-          );
+          
+          try { // <-- NOVO: TRY interno só para o proxy
+            const response = await fetch(
+              `https://proxy.silvatech.dev.br/stream?url=${encodeURIComponent(streamUrl)}`
+            );
 
-          const data = await response.json();
+            const data = await response.json();
 
-          if (!data.hls) {
-            showError('Proxy não retornou playlist HLS');
-            return;
+            if (data && data.hls) {
+              finalUrl = data.hls; // Proxy funcionou, usa a URL dele
+            } else {
+              console.warn('Proxy não retornou HLS. Tentando reproduzir a URL original...');
+            }
+          } catch (proxyError) { // <-- NOVO: CATCH interno se o proxy cair
+            console.warn('Falha na comunicação com o proxy. Tentando URL original...', proxyError);
           }
 
-          finalUrl = data.hls;
         }
 
+        // Toca o vídeo com a URL do proxy OU a original se o proxy falhou
         loadStream(finalUrl, startTime);
 
-      } catch (err) {
+      } catch (err) { // <-- Este é o seu CATCH externo (original)
         console.error(err);
         showError('Erro ao carregar stream');
       }
@@ -165,21 +171,41 @@ const Player = (() => {
     const streamType = detectStreamType(url);
 
     if (streamType === 'hls' && typeof Hls !== 'undefined' && Hls.isSupported()) {
-      _hls = new Hls({
+      
+      // Verifica se é TV ao Vivo (pode ser que no seu sistema o type seja 'livetv' ou 'channel')
+      const isLiveStream = _currentItem && (_currentItem.type === 'livetv' || _currentItem.type === 'channel');
+
+      // Configuração base do HLS
+      const hlsConfig = {
         enableWorker: true,
-        lowLatencyMode: false,
-        backBufferLength: 60,
-        maxBufferLength: 60,
-        maxMaxBufferLength: 120,
-      });
+        backBufferLength: 90, // Mantém 1 minuto e meio para trás caso o usuário volte um pouco
+      };
+
+      if (isLiveStream) {
+        // MODO TV AO VIVO: Buffer curto
+        // Carrega apenas blocos suficientes para manter a estabilidade sem atrasar a live
+        hlsConfig.lowLatencyMode = true;
+        hlsConfig.maxBufferLength = 30;     // 30 segundos de buffer ideal
+        hlsConfig.maxMaxBufferLength = 60;  // Limite máximo de 1 minuto
+      } else {
+        // MODO FILMES E SÉRIES (VOD): Buffer gigante
+        // Permite que o navegador baixe enormes pedaços do filme de uma vez
+        hlsConfig.lowLatencyMode = false;
+        hlsConfig.maxBufferLength = 1800;    // Tenta carregar 30 minutos pra frente
+        hlsConfig.maxMaxBufferLength = 3600; // Limite máximo de 1 hora de buffer
+      }
+
+      _hls = new Hls(hlsConfig);
       _hls.loadSource(url);
       _hls.attachMedia(_video);
+      
       _hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (startTime > 0) _video.currentTime = startTime;
         _video.play().catch(() => {});
         updateQualityMenu();
         updateAudioMenu();
       });
+      
       _hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           switch (data.type) {
